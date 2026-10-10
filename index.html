@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tienda en Marcha · Simulador de consultoría | Actio Growth</title>
+<meta name="description" content="Demo interactiva en 3D: cómo la consultoría estratégica de Actio Growth libera los cuellos de botella de Marketing, Ventas, Operaciones y Finanzas para que las visitas se conviertan en ganancias.">
+<meta name="theme-color" content="#004225">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Actio Growth">
+<meta property="og:title" content="Tienda en Marcha · Simulador de consultoría | Actio Growth">
+<meta property="og:description" content="Explora una tienda en 3D, detecta sus cuellos de botella y aplica la consultoría de Actio área por área hasta liberar el flujo.">
+<meta property="og:url" content="https://actiogrowth.github.io/consultoria-3d/">
+<meta property="og:image" content="https://actiogrowth.github.io/consultoria-3d/assets/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Tienda en Marcha · Simulador de consultoría | Actio Growth">
+<meta name="twitter:description" content="Explora una tienda en 3D, detecta sus cuellos de botella y aplica la consultoría de Actio área por área hasta liberar el flujo.">
+<meta name="twitter:image" content="https://actiogrowth.github.io/consultoria-3d/assets/og-image.png">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="stylesheet" href="css/styles.css">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="escena" aria-label="Escena 3D de una tienda con personas que recorren Marketing, Ventas, Operaciones y Finanzas"></canvas>
+
+<div id="etiquetas" class="etiquetas" aria-label="Áreas del negocio"></div>
+
+<header class="hud-top">
+  <div class="marca">
+    <img src="assets/logo-actio.png" alt="Actio Growth" width="252" height="120">
+    <div class="marca-txt">
+      <div class="eyebrow" data-t="marca.eyebrow">Actio Growth · Simulador</div>
+      <h1 data-t="marca.titulo">Tienda en Marcha</h1>
+      <p class="sub" data-t="marca.subtitulo"></p>
+    </div>
+  </div>
+  <div class="hud-acciones">
+    <div class="progreso" id="progreso"><span class="pdot"></span><span id="progresoTxt"></span></div>
+    <div class="botonera">
+      <button type="button" class="btn" id="btnVista">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V5a1 1 0 0 1 1-1h4M15 4h4a1 1 0 0 1 1 1v4M20 15v4a1 1 0 0 1-1 1h-4M9 20H5a1 1 0 0 1-1-1v-4"/></svg>
+        <span data-t="botones.vistaGeneral">Vista general</span>
+      </button>
+      <button type="button" class="btn" id="btnReiniciar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/></svg>
+        <span data-t="botones.reiniciar">Reiniciar</span>
+      </button>
+      <button type="button" class="btn btn-icono" id="btnAyuda" aria-label="Ayuda">?</button>
+    </div>
+  </div>
+</header>
+
+<div class="centro-top">
+  <div class="aviso" id="aviso" role="status" aria-live="polite">
+    <span class="aviso-ico" aria-hidden="true"></span><span id="avisoTxt"></span>
+  </div>
+  <div class="liberado" id="liberado" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
+    <span id="liberadoTxt"></span>
+  </div>
+</div>
+
+<section class="entradas" id="entradas" aria-labelledby="entradasTit">
+  <h2 id="entradasTit" data-t="entradas.titulo">Entradas</h2>
+  <div id="filasEntradas"></div>
+</section>
+
+<aside class="tarjeta" id="tarjeta" aria-live="polite" hidden></aside>
+
+<div class="ayuda" id="ayuda" role="dialog" aria-modal="true" aria-labelledby="ayudaTit" hidden>
+  <div class="ayuda-caja">
+    <img src="assets/logo-actio.png" alt="Actio Growth" class="ayuda-logo">
+    <h2 id="ayudaTit"></h2>
+    <ol id="ayudaPasos"></ol>
+    <p class="ayuda-tip" id="ayudaTip"></p>
+    <button type="button" class="btn-primario" id="btnEmpezar"></button>
+  </div>
+</div>
+
+<div class="sin-webgl" id="sinWebgl" hidden>
+  <img src="assets/logo-actio.png" alt="Actio Growth">
+  <p>Este navegador no puede mostrar la escena 3D. Prueba con una versión reciente de Chrome, Edge, Safari o Firefox.</p>
+</div>
+
+<noscript><div class="sin-webgl"><p>Activa JavaScript para ver la demo.</p></div></noscript>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
