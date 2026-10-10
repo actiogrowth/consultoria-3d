@@ -35,5 +35,7 @@
 - Vitrina "antes" demasiado parecida al "después": vidrio oscuro, letrero fundido con chispazos y halo cálido al arreglar.
 - Cajas atravesando las repisas; encuadres de cámara por área; título cortado en celular; cofre tapado por el panel en tableta vertical.
 
-### Pendiente de esta sesión
-- Publicación en GitHub Pages bloqueada por autenticación (ver PENDIENTES P1).
+### Publicación
+- Instalada la CLI de GitHub (`gh` 2.102.0, winget) y sesión iniciada por Daniel con la cuenta `actiogrowth` (las credenciales guardadas en el equipo eran de otras cuentas).
+- Creado el repo público `actiogrowth/consultoria-3d`, subida la rama `main` y activado GitHub Pages desde la raíz de `main`.
+- Verificado https://actiogrowth.github.io/consultoria-3d/ en escritorio (1280×720) y celular (375×812): carga Three.js 0.160.0 desde jsDelivr, la escena y la interfaz funcionan (enfocar, aplicar, deshacer, reiniciar), `og-image.png` responde 200 y la consola queda sin errores ni advertencias.
