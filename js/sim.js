@@ -8,6 +8,8 @@ import { L } from './layout.js';
 const rand = (a, b) => a + Math.random() * (b - a);
 const randR = ([a, b]) => rand(a, b);
 const expo = (rate) => -Math.log(1 - Math.random()) / rate;
+// llegadas más parejas que un Poisson puro (Erlang-3: misma tasa media, menos rachas)
+const llegada = (rate) => expo(rate * 3) + expo(rate * 3) + expo(rate * 3);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
 
 export const EST = {
@@ -51,11 +53,15 @@ export class Sim {
     this.pedidos = [];
     this.monedas = [];
     this.fixed = { marketing: false, ventas: false, operaciones: false, finanzas: false };
+    // Arranque: entradas apagadas y tienda vacía
     this.fuentes = {
-      ads: { on: true, nivel: 1, next: 0 },
-      org: { on: true, nivel: 1, next: 0 },
+      ads: { on: false, nivel: 1, next: 0 },
+      org: { on: false, nivel: 1, next: 0 },
     };
-    for (const k of ['ads', 'org']) this.fuentes[k].next = expo(this.tasa(k)) * 0.5;
+    // peatón ocasional: pasa por la calle aunque las entradas estén apagadas
+    this.proxPeaton = randR(PARAMS.peatonCada) * 0.5;
+    // decisión en la vitrina sin rachas: se respeta la proporción que entra
+    this.acumEntrar = Math.random();
     this.cajeros = L.puestosCaja.map((spot, i) => ({ activo: i === 0, cliente: null, spot }));
     this.encargados = L.encargados.map((casa, i) => ({ activo: i === 0, pedido: null, t: 0, dur: 1, casa, objetivo: 0 }));
     this.puestosEntrega = L.puestosEntrega.map((p) => ({ p, ocupado: null }));
@@ -72,11 +78,13 @@ export class Sim {
     const f = this.fuentes[fuente];
     if (nivel !== undefined && nivel !== f.nivel) {
       f.nivel = nivel;
-      f.next = Math.min(f.next, expo(this.tasa(fuente)));
+      f.next = Math.min(f.next, llegada(this.tasa(fuente)));
     }
     if (on !== undefined && on !== f.on) {
       f.on = on;
-      if (on) f.next = expo(this.tasa(fuente)) * 0.4;
+      // al encender con el interruptor arranca en Medio (si no se eligió otro nivel)
+      if (on && nivel === undefined) f.nivel = 1;
+      if (on) f.next = llegada(this.tasa(fuente)) * 0.4;
     }
   }
 
@@ -112,6 +120,9 @@ export class Sim {
     if (origen === 'ads') {
       inicio = j(L.spawnAds);
       ruta = [j(L.decision)];
+    } else if (origen === 'calle') {
+      inicio = j(L.spawnPeaton);
+      ruta = [j(L.decision)];
     } else {
       inicio = j(L.rutaOrg[0]);
       ruta = [...L.rutaOrg.slice(1).map(j), j(L.decision)];
@@ -140,24 +151,6 @@ export class Sim {
       seed: Math.random(),
     };
     this.personas.push(p);
-  }
-
-  // Estado inicial "con historia": fila ya formada y clientes esperando pedido
-  sembrar() {
-    for (let i = 0; i < 10; i++) {
-      this.crearPersona(Math.random() < 0.6 ? 'ads' : 'org');
-      const p = this.personas[this.personas.length - 1];
-      Object.assign(p, { x: L.fila[i].x, z: L.fila[i].z, ruta: [], estado: EST.EN_FILA, espera: rand(0, 12), edad: 2, slot: i });
-      this.fila.push(p);
-    }
-    for (let i = 0; i < 2; i++) {
-      this.crearPersona('ads');
-      const p = this.personas[this.personas.length - 1];
-      const q = this.tomarPuesto(p);
-      const pedido = { cliente: p, estado: 'espera' };
-      this.pedidos.push(pedido);
-      Object.assign(p, { x: q.x, z: q.z, ruta: [], estado: EST.ESPERA, pedido, espera: rand(0, 4), edad: 2 });
-    }
   }
 
   salir(p, ruta, animo) {
@@ -212,14 +205,19 @@ export class Sim {
   step(dt) {
     this.t += dt;
 
-    // 1. Llegadas
+    // 1. Llegadas (peatón ocasional + entradas encendidas)
+    this.proxPeaton -= dt;
+    if (this.proxPeaton <= 0) {
+      if (this.personas.length < this.maxPersonas) this.crearPersona('calle');
+      this.proxPeaton = randR(PARAMS.peatonCada);
+    }
     for (const k of ['ads', 'org']) {
       const f = this.fuentes[k];
       if (!f.on) continue;
       f.next -= dt;
       while (f.next <= 0) {
         if (this.personas.length < this.maxPersonas) this.crearPersona(k);
-        f.next += expo(this.tasa(k));
+        f.next += llegada(this.tasa(k));
       }
     }
 
@@ -237,7 +235,9 @@ export class Sim {
           p.t -= dt;
           if (p.t <= 0) {
             const pe = fx.marketing ? PARAMS.pEntrar.arreglado : PARAMS.pEntrar.roto;
-            if (Math.random() < pe) {
+            this.acumEntrar += pe;
+            if (this.acumEntrar >= 1) {
+              this.acumEntrar -= 1;
               p.estado = EST.A_FILA;
               p.ruta = L.rutaEntrar.map((q) => ({ x: q.x + p.ox * 0.5, z: q.z }));
             } else {
@@ -414,7 +414,7 @@ export class Sim {
     const f = this.fixed;
     const ads = this.fuentes.ads;
     const org = this.fuentes.org;
-    if (!ads.on && !org.on) return 'sinEntradas';
+    if (!ads.on && !org.on) return 'pocasVisitas';
     if (AREAS.every((a) => f[a])) {
       const nivelMax = Math.max(ads.on ? ads.nivel : -1, org.on ? org.nivel : -1);
       return nivelMax <= 0 ? 'liberadoBajo' : 'liberado';

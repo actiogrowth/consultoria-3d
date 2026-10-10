@@ -44,6 +44,16 @@
       <p class="sub" data-t="marca.subtitulo"></p>
     </div>
   </div>
+  <!-- aviso dinámico: flotante y centrado; en pantallas bajas, una línea dentro de la cabecera -->
+  <div class="centro-top">
+    <div class="aviso" id="aviso" role="status" aria-live="polite">
+      <span class="aviso-ico" aria-hidden="true"></span><span id="avisoTxt"><span class="av-largo"></span><span class="av-corto" aria-hidden="true"></span></span>
+    </div>
+    <div class="liberado" id="liberado" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
+      <span id="liberadoTxt"></span>
+    </div>
+  </div>
   <div class="hud-acciones">
     <div class="progreso" id="progreso"><span class="pdot"></span><span id="progresoTxt"></span></div>
     <div class="botonera">
@@ -60,17 +70,13 @@
   </div>
 </header>
 
-<div class="centro-top">
-  <div class="aviso" id="aviso" role="status" aria-live="polite">
-    <span class="aviso-ico" aria-hidden="true"></span><span id="avisoTxt"></span>
-  </div>
-  <div class="liberado" id="liberado" hidden>
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.2 4.2L19 7"/></svg>
-    <span id="liberadoTxt"></span>
-  </div>
-</div>
+<!-- pantallas bajas: botón compacto que abre el panel lateral de entradas -->
+<button type="button" class="btn-entradas" id="btnEntradas" aria-controls="entradas" aria-expanded="false">
+  <span class="be-dot" aria-hidden="true"></span><span id="btnEntradasTxt">Entradas</span><span class="be-icos" id="btnEntradasIcos" aria-hidden="true"></span>
+</button>
 
 <section class="entradas" id="entradas" aria-labelledby="entradasTit">
+  <button type="button" class="entradas-cerrar" id="btnEntradasCerrar" aria-label="Cerrar entradas">×</button>
   <h2 id="entradasTit" data-t="entradas.titulo">Entradas</h2>
   <div id="filasEntradas"></div>
 </section>

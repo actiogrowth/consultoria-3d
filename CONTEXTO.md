@@ -33,9 +33,12 @@ Una tienda de barrio vista como maqueta. Recorrido de izquierda a derecha:
 | Caja fuerte | Caja fuerte por la que pasan las monedas | Finanzas |
 | Cofre | Cofre de Ganancias que se llena con monedas | Resultado |
 
-### Estado inicial (los 4 cuellos de botella visibles)
+### Arranque
+La demo arranca con **Anuncios pagos y Orgánico apagados** y la **tienda vacía** (sin fila ni pedidos). Solo pasa alguien por la calle de vez en cuando (un peatón cada ~10 s), que hace el mismo recorrido que cualquier cliente. Las 4 áreas están rotas: sus cuellos de botella se hacen visibles en cuanto se enciende una entrada.
+
+### Las 4 áreas rotas
 1. **Marketing**: vitrina apagada y letrero fundido (parpadea). La mayoría mira y pasa de largo, sale de la escena.
-2. **Ventas**: un solo cajero lento y una fila larga. Quien espera demasiado se va molesto. Si la fila está llena, quien llega se va molesto de inmediato.
+2. **Ventas**: un solo cajero lento; al encender una entrada se forma una fila que crece a la vista. Quien espera demasiado se va molesto. Si la fila está llena, quien llega se va molesto de inmediato.
 3. **Operaciones / Servicios**: bodega desordenada (cajas tiradas por el piso), un solo encargado busca cada pedido. Los clientes esperan su pedido y algunos se van insatisfechos.
 4. **Finanzas**: la caja fuerte tiene una grieta; parte de las monedas se cae en el camino al cofre y se pierde.
 
@@ -48,19 +51,20 @@ Una tienda de barrio vista como maqueta. Recorrido de izquierda a derecha:
 Cada arreglo se puede **deshacer** para comparar el antes y el después.
 
 ## Reglas de negocio de la simulación
-- **Entradas**: cada una (Anuncios pagos, Orgánico) tiene interruptor de encendido/apagado y tres intensidades: bajo, medio, alto (sin números). La intensidad solo cambia cuánta gente llega. Si ambas están apagadas no llega nadie y se muestra un aviso.
+- **Entradas**: cada una (Anuncios pagos, Orgánico) tiene interruptor de encendido/apagado y tres intensidades: bajo, medio, alto (sin números). Arrancan apagadas; al encenderlas con el interruptor empiezan en Medio. La intensidad solo cambia cuánta gente llega.
+- **Peatón ocasional**: con o sin entradas, pasa alguien por la calle cada ~10 s y sigue las mismas reglas que cualquier persona (mira la vitrina, pasa de largo o entra). Con ambas entradas apagadas el aviso dice que solo pasa alguien de vez en cuando e invita a encender anuncios u orgánico.
 - **Valla publicitaria**: brilla más cuanto mayor es la intensidad de anuncios; apagada si los anuncios están apagados. Los faroles del sendero hacen lo mismo con la intensidad orgánica.
 - **Causa → efecto en orden**: una persona solo puede llegar a un tramo si pasó el anterior. Cada área limita lo que deja pasar:
   - Marketing decide cuántos de los que pasan frente a la vitrina entran.
   - Ventas tiene una capacidad de atención (cajeros × rapidez) y una fila con paciencia limitada.
   - Operaciones tiene una capacidad de preparación de pedidos y clientes con paciencia limitada.
   - Finanzas decide cuánto del dinero vendido llega al cofre.
-- **Mensaje clave garantizado por diseño**: con Ventas rota, la capacidad de caja es menor que lo que llega con Marketing arreglado o con intensidad alta. Más anuncios → fila más larga → más clientes molestos, no más ganancias.
+- **Mensaje clave garantizado por diseño**: con Ventas rota, la capacidad de caja es menor que lo que llega solo con anuncios en Medio. Al encender anuncios la fila se forma y crece a la vista; con más anuncios o Marketing arreglado se llena antes y hay más clientes molestos, no más ganancias.
 - **Ganancias**: cada entrega completada genera monedas que viajan a la caja fuerte y luego al cofre. El nivel del cofre refleja el **ritmo reciente** de monedas que llegan (no un acumulado), por eso solo se ve lleno cuando el flujo completo está liberado, y baja si se vuelve a romper un área o se apagan las entradas.
 - **Con las 4 áreas optimizadas**: mensaje "Flujo liberado al 100%" y, si está entrando gente, efecto de cofre rebosando.
 - **Ánimo**: quien se va molesto (fila o espera de pedido) muestra una cara molesta; quien se va con su compra muestra una cara feliz. Quien pasa de largo no muestra ánimo (no llegó a ser cliente).
 - **Sin cifras**: no hay números, montos ni porcentajes en pantalla (la única excepción es el contador "x/4 áreas optimizadas" y el mensaje "Flujo liberado al 100%", pedidos explícitamente). Solo tendencias visuales.
-- **Reiniciar**: todo vuelve a estar roto y ambas entradas encendidas en intensidad media.
+- **Reiniciar**: vuelve exactamente al arranque: entradas apagadas, tienda vacía, las 4 áreas rotas.
 
 ## Interacción esperada
 - Etiquetas flotantes sobre cada área y sobre el cofre, con un punto de estado (problema / optimizada).

@@ -22,6 +22,7 @@ export const L = {
 
   // Entradas
   spawnAds: P(-15.8, 3.9),
+  spawnPeaton: P(15.8, 4.15), // peatón ocasional: llega por la vereda desde la derecha
   rutaOrg: [P(-15.4, -7.8), P(-13.6, -6.3), P(-12.2, -4.3), P(-11.3, -1.9), P(-10.6, 0.7), P(-9.5, 2.9)],
   decision: P(-7.0, 3.75),
 

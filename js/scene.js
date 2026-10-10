@@ -882,7 +882,19 @@ export class Escena {
     return { target, r, polar: this.angosta ? Math.min(v.polar, 0.78) : v.polar, az: this.azBase + v.az };
   }
 
+  // Anula la inercia pendiente de OrbitControls (mouse) sin mover la cámara
+  frenarControles() {
+    const p = this.camera.position.clone(), t = this.controls.target.clone();
+    this.controls.enableDamping = false;
+    this.controls.update();
+    this.controls.enableDamping = true;
+    this.camera.position.copy(p);
+    this.controls.target.copy(t);
+    this.camera.lookAt(t);
+  }
+
   volarA(id, instantaneo = false) {
+    this.frenarControles();
     const dest = this.vistaDe(id);
     const off = new THREE.Vector3().subVectors(this.camera.position, this.controls.target);
     const sph = new THREE.Spherical().setFromVector3(off);
@@ -912,6 +924,7 @@ export class Escena {
   girar(sentido) {
     const paso = sentido * (Math.PI / 4);
     this.inercia = 0;
+    if (!this.vuelo) this.frenarControles();
     const actual = this.estadoCamara();
     const base = this.vuelo ? this.vuelo.dest : actual;
     const dest = { target: base.target.clone(), r: base.r, polar: base.polar, az: base.az + paso };
@@ -934,39 +947,48 @@ export class Escena {
     this.camera.lookAt(t);
   }
 
-  // Giro con un dedo: una vuelta completa = 85 % del ancho de pantalla, con inercia suave
+  // Giro con un dedo: una vuelta completa = 85 % del ancho de pantalla, con inercia suave.
+  // Se escucha en la ventana para que el giro también empiece sobre una etiqueta.
   giroTactil(canvas) {
+    this.arrastreDist = 0;
+    this.arrastreFin = 0;
     const fin = (e) => {
-      if (e.pointerType !== 'touch') return;
+      if (e.pointerType !== 'touch' || !this.toques.has(e.pointerId)) return;
       this.toques.delete(e.pointerId);
       const a = this.arrastre;
       if (a && a.id === e.pointerId) {
         const reciente = performance.now() - a.t < 120;
         this.inercia = !this.reducido && reciente ? clamp(this.velGiro, -4, 4) : 0;
+        this.arrastreDist = a.dist;
+        this.arrastreFin = performance.now();
         this.arrastre = null;
       }
     };
-    canvas.addEventListener('pointerdown', (e) => {
+    window.addEventListener('pointerdown', (e) => {
+      // tocar o hacer clic en la escena durante un vuelo de cámara lo interrumpe y devuelve el control
+      // (en fase de captura, antes de que OrbitControls reciba el evento)
+      if (e.target === canvas && this.vuelo) { this.vuelo = null; this.controls.enabled = true; }
       if (e.pointerType !== 'touch') return;
+      if (e.target !== canvas && !(e.target.closest && e.target.closest('.etiqueta'))) return;
       this.toques.set(e.pointerId, true);
       this.inercia = 0;
       if (this.toques.size === 1) {
-        this.arrastre = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+        this.arrastre = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), dist: 0 };
         this.velGiro = 0;
-        if (this.vuelo) { this.vuelo = null; this.controls.enabled = true; }
       } else {
         this.arrastre = null; // con dos dedos manda OrbitControls (acercar / desplazar)
       }
-    });
-    canvas.addEventListener('pointermove', (e) => {
+    }, true);
+    window.addEventListener('pointermove', (e) => {
       if (e.pointerType !== 'touch' || !this.toques.has(e.pointerId) || this.toques.size !== 1) return;
       const ahora = performance.now();
       const a = this.arrastre;
       if (!a || a.id !== e.pointerId) {
-        this.arrastre = { id: e.pointerId, x: e.clientX, y: e.clientY, t: ahora };
+        this.arrastre = { id: e.pointerId, x: e.clientX, y: e.clientY, t: ahora, dist: 0 };
         return;
       }
       const dx = e.clientX - a.x, dy = e.clientY - a.y;
+      a.dist += Math.hypot(dx, dy);
       const w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
       const dAz = (-dx * Math.PI * 2) / (0.85 * w);
       const dPol = (-dy * 1.8) / h;
@@ -975,8 +997,13 @@ export class Escena {
       this.velGiro = this.velGiro * 0.6 + (dAz / dt) * 0.4;
       a.x = e.clientX; a.y = e.clientY; a.t = ahora;
     });
-    canvas.addEventListener('pointerup', fin);
-    canvas.addEventListener('pointercancel', fin);
+    window.addEventListener('pointerup', fin);
+    window.addEventListener('pointercancel', fin);
+  }
+
+  // true si acaba de terminar un arrastre (para no abrir una tarjeta al soltar sobre una etiqueta)
+  vieneDeArrastre() {
+    return this.arrastreDist > 10 && performance.now() - this.arrastreFin < 400;
   }
 
   // Muros que se vuelven semitransparentes cuando quedan entre la cámara y el interior
@@ -1193,7 +1220,8 @@ export class Escena {
     const nv = clamp(this.nivelVisual, 0, 1.25);
     this.pila.position.y = lerp(0.12, 1.02, Math.min(1, nv)) + Math.max(0, nv - 1) * 0.4;
     const todos = sim.areasArregladas === 4;
-    const rebosa = todos && nv > 0.85;
+    // rebosa con histéresis para que no titile cerca del umbral
+    const rebosa = todos && (this.rebosa ? nv > 0.7 : nv > 0.8);
     this.luzCofre.intensity = damp(this.luzCofre.intensity, rebosa ? 6 + Math.sin(this.t * 4) * 1.5 : nv * 2, 3, dt);
     this.rebosa = rebosa;
 

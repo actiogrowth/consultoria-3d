@@ -110,6 +110,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
   content: ""; position: absolute; left: 50%; bottom: -6px; width: 10px; height: 10px; margin-left: -5px;
   background: inherit; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: rotate(45deg);
 }
+/* sin gesto del navegador: así un arrastre que empieza sobre la etiqueta también gira la escena */
+.etiqueta { touch-action: none; }
 .etiqueta:hover { background: #F4F8F4; box-shadow: 0 8px 22px rgba(0, 66, 37, .24); }
 .etiqueta.activa { background: var(--g900); color: #fff; border-color: var(--g900); }
 .etiqueta.activa::after { border-color: var(--g900); }
@@ -257,8 +259,9 @@ body.con-tarjeta .giro { right: calc(var(--tarjeta-w) + 40px); }
 /* ---------- Pantallas medianas ---------- */
 @media (max-width: 1180px) {
   .sub { display: none; }
-  .centro-top { top: 86px; width: min(540px, calc(100vw - 40px)); }
-  .tarjeta { top: 150px; max-height: calc(100vh - 170px); }
+  /* el aviso va debajo de los botones de la derecha (antes los tapaba en tableta) */
+  .centro-top { top: 118px; width: min(540px, calc(100vw - 40px)); }
+  .tarjeta { top: 176px; max-height: calc(100vh - 196px); }
 }
 
 /* tableta: si la tarjeta está abierta no hay hueco entre paneles; van sobre el panel de entradas */
@@ -341,4 +344,141 @@ body.con-tarjeta .giro { right: calc(var(--tarjeta-w) + 40px); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Etiquetas: líneas guía cuando se desplazan para no montarse ---------- */
+.guias { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.guias line { stroke: rgba(19, 38, 28, .45); stroke-width: 1.5; stroke-dasharray: 3 3; }
+.guias circle { fill: #fff; stroke: rgba(19, 38, 28, .55); stroke-width: 1.5; }
+.etiqueta.desplazada::after { display: none; }
+
+/* aviso: texto corto oculto fuera de pantallas bajas */
+.av-corto { display: none; }
+#avisoTxt { min-width: 0; }
+
+/* botón de entradas y cierre del panel: solo en pantallas bajas */
+.btn-entradas, .entradas-cerrar { display: none; }
+
+/* =====================================================================
+   Pantallas bajas (celular en horizontal, ventanas bajas)
+   Se activa con html.baja (js/main.js): alto ≤ 520 px y más ancho que alto.
+   ===================================================================== */
+html.baja { --alto-cabecera: 52px; }
+
+/* cabecera: una sola barra compacta */
+html.baja .hud-top {
+  padding: 6px 10px; gap: 8px; align-items: center; flex-wrap: nowrap;
+  background: rgba(255, 255, 255, .96); border-bottom: 1px solid var(--line);
+  box-shadow: 0 4px 14px rgba(0, 66, 37, .08); pointer-events: auto;
+}
+html.baja .marca {
+  background: none; border: none; box-shadow: none; padding: 0; gap: 8px; max-width: none;
+  backdrop-filter: none; flex-shrink: 0; min-width: 0;
+}
+html.baja .marca img { height: 22px; }
+html.baja .marca-txt { padding-left: 8px; }
+html.baja .eyebrow, html.baja .sub { display: none; }
+html.baja .marca h1 { font-size: 14px; white-space: nowrap; margin: 0; line-height: 1.1; }
+
+/* aviso: una línea dentro de la cabecera; al tocarlo se despliega completo */
+html.baja .centro-top {
+  position: relative; top: auto; left: auto; transform: none; width: auto; min-width: 0;
+  flex: 1 1 auto; height: 32px; display: block; pointer-events: auto;
+}
+html.baja .aviso {
+  height: 32px; padding: 0 10px; gap: 8px; font-size: 12.5px; border-left-width: 4px;
+  box-shadow: none; cursor: pointer; border-radius: 10px;
+}
+html.baja .aviso-ico { width: 18px; height: 18px; }
+html.baja .aviso-ico::after { font-size: 12px; }
+html.baja #avisoTxt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* el texto completo queda disponible para lectores de pantalla */
+html.baja .av-largo { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+html.baja .av-corto { display: inline; }
+html.baja .aviso.abierto {
+  position: absolute; left: 0; right: 0; top: 0; height: auto; min-height: 32px; z-index: 40;
+  padding: 8px 10px; align-items: flex-start; box-shadow: var(--sombra);
+}
+html.baja .aviso.abierto #avisoTxt { white-space: normal; overflow: visible; }
+html.baja .aviso.abierto .av-largo { position: static; width: auto; height: auto; overflow: visible; clip: auto; white-space: normal; }
+html.baja .aviso.abierto .av-corto { display: none; }
+html.baja .liberado {
+  position: fixed; top: calc(var(--alto-cabecera) + 6px); left: 50%; transform: translateX(-50%);
+  font-size: 13px; padding: 6px 14px; animation: none; white-space: nowrap; pointer-events: none;
+}
+html.baja .liberado svg { width: 16px; height: 16px; }
+
+/* progreso y botones compactos, siempre visibles */
+html.baja .hud-acciones { flex-direction: row; align-items: center; gap: 6px; flex-shrink: 0; }
+html.baja .progreso {
+  display: inline-flex; padding: 0 12px; height: 32px; font-size: 12px; gap: 7px; white-space: nowrap;
+  box-shadow: none;
+}
+html.baja .pdot { width: 8px; height: 8px; box-shadow: 0 0 0 3px rgba(122, 242, 168, .22); }
+html.baja .botonera { gap: 4px; }
+html.baja .btn {
+  width: 40px; height: 40px; min-height: 40px; padding: 0; justify-content: center; box-shadow: none;
+}
+html.baja .btn span { display: none; }
+html.baja .btn-icono { width: 40px; }
+
+/* panel de entradas plegable: botón compacto + panel lateral */
+html.baja .btn-entradas {
+  display: inline-flex; position: fixed; left: 10px; bottom: calc(10px + var(--safe-b)); z-index: 21;
+  align-items: center; gap: 8px; min-height: 44px; padding: 0 14px 0 12px; border-radius: 999px;
+  background: var(--panel); border: 1px solid var(--line); box-shadow: var(--sombra);
+  font-size: 13.5px; font-weight: 800; color: var(--g900);
+}
+.be-dot { width: 10px; height: 10px; border-radius: 50%; background: #B9C4BB; flex-shrink: 0; }
+.btn-entradas.on .be-dot { background: var(--ok); box-shadow: 0 0 0 3px rgba(31, 157, 85, .22); }
+.be-icos { display: inline-flex; gap: 4px; }
+.be-icos span { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--grey); opacity: .45; }
+.be-icos span.on { opacity: 1; background: var(--ok-suave); }
+.be-icos svg { width: 14px; height: 14px; fill: none; stroke: var(--g900); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+html.baja .btn-entradas[aria-expanded="true"] { visibility: hidden; }
+
+html.baja .entradas {
+  left: 10px; right: auto; top: calc(var(--alto-cabecera) + 8px); bottom: calc(10px + var(--safe-b));
+  width: min(330px, 80vw); overflow-y: auto; z-index: 32; padding: 14px 14px 10px;
+  transform: translateX(calc(-100% - 24px)); visibility: hidden;
+  transition: transform .25s ease, visibility .25s;
+}
+html.baja .entradas.abierto { transform: none; visibility: visible; }
+html.baja .entradas h2 { display: block; margin: 2px 40px 10px 0; }
+html.baja .entradas .progreso-movil { display: none; }
+html.baja .fila-entrada { flex-wrap: wrap; gap: 8px 10px; padding: 10px 0; }
+html.baja .fe-nombre { flex: 1 1 auto; }
+html.baja .fe-ico { display: grid; }
+html.baja .seg { width: 100%; }
+html.baja .seg button { flex: 1; min-height: 38px; }
+html.baja .entradas-cerrar {
+  display: grid; place-items: center; position: absolute; top: 8px; right: 8px; width: 40px; height: 40px;
+  border-radius: 50%; border: 1px solid var(--line); background: #fff; font-size: 22px; line-height: 1; color: var(--g900);
+}
+
+/* tarjeta como panel lateral */
+html.baja .tarjeta {
+  top: calc(var(--alto-cabecera) + 8px); bottom: calc(10px + var(--safe-b)); right: 10px; left: auto;
+  width: min(var(--tarjeta-w), 46vw); height: auto; max-height: none;
+  border-radius: 16px; border-bottom: 1px solid var(--line); padding-bottom: 0;
+  animation: entra .3s cubic-bezier(.2, .9, .3, 1);
+}
+html.baja .t-cab { padding: 12px 16px 10px; }
+html.baja .t-cab::before { display: none; }
+html.baja .t-cab h2 { font-size: 18px; }
+html.baja .t-chip { margin-top: 6px; }
+html.baja .t-cuerpo { padding: 10px 16px 4px; gap: 8px; min-height: 0; }
+html.baja .bloque { padding: 9px 12px; }
+html.baja .bloque p { font-size: 13px; line-height: 1.45; }
+html.baja .t-pie { padding: 8px 16px 12px; }
+html.baja .btn-primario, html.baja .btn-sec { min-height: 44px; }
+
+/* botones de girar: esquina inferior derecha; con tarjeta, a su izquierda */
+html.baja .giro, html.baja body.con-tarjeta .giro { left: auto; right: 10px; bottom: calc(10px + var(--safe-b)); }
+html.baja body.con-tarjeta .giro { right: calc(min(var(--tarjeta-w), 46vw) + 20px); }
+html.baja .btn-giro { width: 44px; height: 44px; }
+
+/* celular chico en horizontal: sin título de texto para dejar sitio al aviso */
+@media (max-width: 700px) {
+  html.baja .marca-txt { display: none; }
 }

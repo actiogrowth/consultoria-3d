@@ -8,6 +8,14 @@ import { UI } from './ui.js';
 
 const canvas = document.getElementById('escena');
 
+// Pantalla baja (celular en horizontal, ventana baja): diseño compacto propio
+const mqBaja = window.matchMedia('(max-height: 520px) and (min-aspect-ratio: 1/1)');
+function aplicarBaja() {
+  const antes = document.documentElement.classList.contains('baja');
+  document.documentElement.classList.toggle('baja', mqBaja.matches);
+  return antes !== mqBaja.matches;
+}
+
 function hayWebGL() {
   try {
     const c = document.createElement('canvas');
@@ -24,6 +32,7 @@ if (!hayWebGL()) {
 }
 
 function iniciar() {
+  aplicarBaja();
   const movil = window.matchMedia('(max-width: 760px), (pointer: coarse)').matches;
   const mqReducido = window.matchMedia('(prefers-reduced-motion: reduce)');
   const reducido = mqReducido.matches;
@@ -63,7 +72,7 @@ function iniciar() {
     },
 
     reiniciar() {
-      precalentar();
+      estadoInicial();
       ui.cerrarTarjeta();
       ui.refrescar();
       ui.avisoActual = null;
@@ -72,18 +81,15 @@ function iniciar() {
     },
   };
 
-  // Todo roto, entradas en intensidad media y unos segundos ya simulados
-  function precalentar() {
+  // Arranque y Reiniciar: entradas apagadas, tienda vacía, las 4 áreas rotas
+  function estadoInicial() {
     sim.reset();
-    sim.sembrar();
     for (const a of AREAS) escena.setFixed(a, false, true);
-    for (const f of ['ads', 'org']) escena.setBrillo(f, true, 1);
+    for (const f of ['ads', 'org']) escena.setBrillo(f, false, 1);
     escena.limpiarPersonas();
-    const pasos = Math.round(PARAMS.precalentar / 0.1);
-    for (let i = 0; i < pasos; i++) sim.step(0.1);
   }
 
-  precalentar();
+  estadoInicial();
   const ui = new UI(app);
   ui.actualizarCorrimiento(true);
   escena.volarA('general', true);
@@ -98,6 +104,7 @@ function iniciar() {
     const dur = performance.now() - abajo.t;
     abajo = null;
     if (mov > 8 || dur > 600) return;
+    if (performance.now() - (ui.tragarToque || 0) < 1000) return; // el toque solo cerró un panel
     const id = escena.pick(e.clientX, e.clientY);
     if (id) app.enfocar(id);
   });
@@ -115,7 +122,10 @@ function iniciar() {
 
   // ---- tamaño de ventana ----
   window.addEventListener('resize', () => {
-    const cambioModo = escena.resize();
+    const cambioBaja = aplicarBaja();
+    const cambioModo = escena.resize() || cambioBaja;
+    if (cambioBaja) ui.cambioDiseno();
+    else ui.medirEtiquetas();
     ui.actualizarCorrimiento(true);
     const camaraRota = !Number.isFinite(escena.camera.position.x);
     if (camaraRota || (cambioModo && !ui.abierta)) escena.volarA(ui.abierta || 'general', true);

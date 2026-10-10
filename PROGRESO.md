@@ -62,3 +62,35 @@
 
 ### Decisiones registradas
 - D2, D4 y D7 movidas a "Decisiones resueltas" (2026-10-09). D8 aplazado hasta el dominio propio. P5 pasa a riesgo conocido de prioridad Media con la recomendación para reuniones.
+
+## 2026-10-10 · Sesión 3 — Arranque vacío, pantallas bajas y etiquetas sin superposición
+
+### Arranque y simulación
+- La demo arranca con Anuncios pagos y Orgánico apagados y la tienda vacía; se quitó el arranque "con historia" (`sembrar()` y el precalentamiento).
+- Peatón ocasional siempre activo: uno cada 8–12 s llega por la vereda desde la derecha y sigue las reglas de cualquier persona.
+- Al encender una entrada con el interruptor arranca en Medio. Bajo, Medio y Alto mantienen sus tasas.
+- Nuevo aviso con las entradas apagadas: "Solo pasa alguien de vez en cuando: enciende anuncios pagos u orgánico para atraer más visitas." Paso 1 de la ayuda actualizado.
+- "Reiniciar" vuelve a ese arranque exacto.
+- Recalibración para que la fila crezca a la vista con solo anuncios en Medio y Ventas rota (ver ARQUITECTURA y PENDIENTES D10): ~3 personas a los 30 s, ~5 a los 45 s y ~7 al minuto.
+
+### Pantallas bajas (celular en horizontal, ventanas bajas)
+- Detección por `(max-height: 520px) and (min-aspect-ratio: 1/1)` y clase `html.baja`.
+- Cabecera de una sola barra con el aviso en una línea (texto corto, se despliega completo al tocarlo), progreso visible y botones como íconos.
+- Panel de Entradas plegable (botón compacto con señal de entradas encendidas, panel lateral, cierre con ×, Esc o toque fuera).
+- Tarjeta como panel lateral derecho; botones de girar abajo a la derecha, a la izquierda de la tarjeta cuando está abierta.
+
+### Etiquetas
+- Colocación sin superposición en todos los tamaños: busca el hueco libre más cercano evitando otras etiquetas y la interfaz, con línea guía; acorta las de las entradas; oculta las que no tienen lugar (nunca la del área enfocada) y las de áreas tapadas por la tarjeta o el panel.
+- Un arrastre con el dedo que empieza sobre una etiqueta también gira la escena (sin abrir la tarjeta al soltar).
+
+### Otros arreglos encontrados en las pruebas
+- En 761–1180 px el aviso tapaba los botones Vista general / Reiniciar: ahora va debajo.
+- Tocar fuera del panel de entradas para cerrarlo ya no abre a la vez el área que estaba debajo del dedo.
+- Arrastrar con el mouse durante un vuelo de cámara ahora interrumpe el vuelo (antes se ignoraba).
+- La inercia pendiente del mouse ya no desvía los giros por botón ni los vuelos.
+
+### Pruebas (Chrome sin interfaz por CDP, con toques reales emulados)
+- Tamaños: 640×360 y 844×390 (celular horizontal, diseño bajo), 360×640 y 390×844 (celular vertical), 768×1024 (tableta) y 1280×720 (escritorio).
+- En cada uno: arranque vacío con entradas apagadas y aviso nuevo; peatón ocasional en tiempo real; encender y apagar cada entrada (arranca en Medio); mensaje clave con 60 s simulados (la fila llegó a 5–10 y el aviso pasó a "Hay fila en caja…" en los seis); abrir y cerrar el panel de Entradas (botón, ×, toque fuera) en pantallas bajas; aviso desplegable; tarjeta de cada una de las 5 etiquetas tocando la etiqueta; giro con el dedo (85 % del ancho = 361° en cada sentido; 30 % = 124°; desde una etiqueta = 127° sin abrir tarjeta), con mouse (400 px ≈ 110°) y con botones (4 pasos de 45° y vuelta); "Reiniciar".
+- Comprobación automática de etiquetas en cada estado (inicio, panel abierto, cada tarjeta, girado, 180°): ninguna superpuesta, ninguna tapada por cabecera/aviso/panel/tarjeta/botones, ninguna fuera de pantalla; botones de girar sin chocar con otros controles; sin scroll horizontal.
+- Consola sin errores ni advertencias en todas las corridas.

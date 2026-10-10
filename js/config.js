@@ -33,11 +33,21 @@ export const TEXTOS = {
     niveles: ['Bajo', 'Medio', 'Alto'],
     encender: 'Encender',
     apagar: 'Apagar',
+    // pantallas bajas: botón que abre el panel lateral de entradas
+    abrir: 'Entradas',
+    cerrar: 'Cerrar entradas',
+    estadoOn: 'hay entradas encendidas',
+    estadoOff: 'entradas apagadas',
   },
 
   etiquetasEscena: {
     ads: 'Anuncios pagos',
     org: 'Orgánico · recomendación',
+  },
+  // versión corta que se usa si la etiqueta de una entrada choca con otra
+  etiquetasEscenaCortas: {
+    ads: 'Anuncios',
+    org: 'Orgánico',
   },
 
   // Textos pintados dentro de la escena 3D
@@ -115,7 +125,7 @@ export const TEXTOS = {
   liberado: 'Flujo liberado al 100%',
 
   avisos: {
-    sinEntradas: 'No está llegando nadie: enciende anuncios pagos u orgánico para atraer visitas.',
+    pocasVisitas: 'Solo pasa alguien de vez en cuando: enciende anuncios pagos u orgánico para atraer más visitas.',
     filaConAds: 'Hay fila en caja: más anuncios solo la alargan y la gente se va molesta.',
     filaSinAds: 'Hay fila en caja: la gente espera demasiado y se va molesta.',
     entregaLenta: 'Los pedidos tardan en salir: los clientes esperan y algunos se van insatisfechos.',
@@ -127,10 +137,24 @@ export const TEXTOS = {
     liberadoBajo: 'Todo fluye. Con más visitas, el cofre se llena más rápido.',
   },
 
+  // Versión de una línea para pantallas bajas (el texto completo se ve al tocar el aviso)
+  avisosCortos: {
+    pocasVisitas: 'Pasa poca gente: enciende una entrada.',
+    filaConAds: 'Fila en caja: más anuncios solo la alargan.',
+    filaSinAds: 'Fila en caja: la gente se va molesta.',
+    entregaLenta: 'Los pedidos tardan en salir.',
+    vitrina: 'La vitrina no llama la atención.',
+    ventas: 'Un solo cajero no da abasto.',
+    operaciones: 'La bodega frena las entregas.',
+    finanzas: 'Parte del dinero se pierde.',
+    liberado: 'Flujo liberado de punta a punta.',
+    liberadoBajo: 'Todo fluye: atrae más visitas.',
+  },
+
   ayuda: {
     titulo: 'Así funciona Tienda en Marcha',
     pasos: [
-      'Las personas llegan por <b>anuncios pagos</b> o de forma <b>orgánica</b>. Enciéndelos o cambia su intensidad en el panel de entradas.',
+      'Al principio solo pasa alguien de vez en cuando. Enciende los <b>anuncios pagos</b> o el <b>orgánico</b> en el panel de entradas para atraer visitas.',
       'Cada área del negocio tiene un <b>cuello de botella</b>. Toca su etiqueta para ver el problema y lo que hace Actio.',
       'Aplica la consultoría área por área y mira cómo se llena el cofre de <b>Ganancias</b>.',
     ],
@@ -165,13 +189,15 @@ export const PARAMS = {
     ads: [0.25, 0.5, 0.85],
     org: [0.15, 0.3, 0.5],
   },
+  // Peatón ocasional (siempre activo, aun con las entradas apagadas): uno cada 8–12 s
+  peatonCada: [8, 12],
   // Marketing: probabilidad de entrar al pasar frente a la vitrina
-  pEntrar: { roto: 0.3, arreglado: 0.68 },
+  pEntrar: { roto: 0.45, arreglado: 0.68 },
   // Ventas
   cajeros: { roto: 1, arreglado: 2 },
-  atencion: { roto: [4.4, 5.6], arreglado: [1.5, 2.1] }, // incluye caminar al mostrador
+  atencion: { roto: [7.0, 8.6], arreglado: [1.5, 2.1] }, // incluye caminar al mostrador
   filaMax: 12,
-  pacienciaFila: [32, 44],
+  pacienciaFila: [50, 66],
   // Operaciones
   encargados: { roto: 1, arreglado: 2 },
   preparacion: { roto: [5.0, 7.0], arreglado: [0.8, 1.3] },
@@ -180,11 +206,10 @@ export const PARAMS = {
   monedasPorVenta: 3,
   pPerderMoneda: { roto: 0.55, arreglado: 0 },
   // Ganancias: ritmo de referencia (monedas/s) = flujo completo en intensidad media
-  ritmoReferencia: 1.6,
+  ritmoReferencia: 1.45,
   tauRitmo: 9,
   // Personas
   velocidad: [1.45, 1.85],
   topePersonas: { escritorio: 70, celular: 40 },
   topeMonedas: 90,
-  precalentar: 20, // segundos simulados al iniciar / reiniciar (tras sembrar la fila)
 };
