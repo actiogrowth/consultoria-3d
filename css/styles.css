@@ -158,6 +158,23 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .seg button[aria-pressed="true"] { background: #fff; color: var(--g900); box-shadow: 0 1px 4px rgba(0, 66, 37, .15); }
 .seg button:disabled { opacity: .45; cursor: not-allowed; }
 
+/* ---------- Botones de girar ---------- */
+.giro {
+  position: fixed; right: 20px; bottom: calc(20px + var(--safe-b)); z-index: 21;
+  display: flex; gap: 8px; transition: right .25s ease, bottom .25s ease;
+}
+.btn-giro {
+  width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--panel); border: 1px solid var(--line); color: var(--g900);
+  box-shadow: var(--sombra); transition: background .15s, color .15s, transform .1s;
+}
+.btn-giro svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.3; stroke-linecap: round; stroke-linejoin: round; }
+.btn-giro:hover { background: var(--g900); color: #fff; }
+.btn-giro:active { transform: scale(.93); }
+.btn-giro:focus-visible { outline: 3px solid #7FC99A; outline-offset: 2px; }
+/* con tarjeta abierta en escritorio: a la izquierda de la tarjeta */
+body.con-tarjeta .giro { right: calc(var(--tarjeta-w) + 40px); }
+
 /* ---------- Tarjeta de área ---------- */
 .tarjeta {
   position: fixed; top: 96px; right: 20px; bottom: 20px; z-index: 30; width: var(--tarjeta-w);
@@ -244,6 +261,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .tarjeta { top: 150px; max-height: calc(100vh - 170px); }
 }
 
+/* tableta: si la tarjeta está abierta no hay hueco entre paneles; van sobre el panel de entradas */
+@media (min-width: 761px) and (max-width: 1000px) {
+  body.con-tarjeta .giro { right: auto; left: 20px; bottom: calc(var(--alto-entradas, 120px) + 32px + var(--safe-b)); }
+}
+
 /* ---------- Celular ---------- */
 @media (max-width: 760px) {
   :root { --radio: 14px; }
@@ -281,6 +303,11 @@ button { font: inherit; color: inherit; cursor: pointer; }
   .seg button { padding: 6px 9px; min-height: 36px; font-size: 12.5px; }
   .switch { width: 50px; height: 30px; }
   .switch::after { width: 24px; height: 24px; }
+
+  /* sobre el panel de entradas o sobre la tarjeta inferior, a la derecha */
+  .giro, body.con-tarjeta .giro { left: auto; right: var(--gutter); bottom: calc(var(--alto-inferior, 140px) + 10px); }
+  .btn-giro:hover { background: var(--panel); color: var(--g900); }
+  .btn-giro:active { background: var(--g900); color: #fff; }
 
   .tarjeta {
     top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 58dvh;

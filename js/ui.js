@@ -40,6 +40,13 @@ export class UI {
     $('#btnVista').setAttribute('aria-label', TEXTOS.botones.vistaGeneral);
     $('#btnReiniciar').setAttribute('aria-label', TEXTOS.botones.reiniciar);
     $('#btnAyuda').setAttribute('aria-label', TEXTOS.botones.ayuda);
+    $('#giro').setAttribute('aria-label', TEXTOS.botones.girar);
+    for (const [id, txt, sentido] of [['#btnGiroIzq', TEXTOS.botones.girarIzq, 1], ['#btnGiroDer', TEXTOS.botones.girarDer, -1]]) {
+      const b = $(id);
+      b.setAttribute('aria-label', txt);
+      b.title = txt;
+      b.addEventListener('click', () => app.escena.girar(sentido));
+    }
 
     this.crearEtiquetas();
     this.crearEntradas();
@@ -160,6 +167,7 @@ export class UI {
     this.pintarTarjeta();
     const t = $('#tarjeta');
     t.hidden = false;
+    document.body.classList.add('con-tarjeta');
     // reinicia la animación de entrada
     t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
     this.actualizarCorrimiento();
@@ -169,6 +177,7 @@ export class UI {
   cerrarTarjeta() {
     this.abierta = null;
     $('#tarjeta').hidden = true;
+    document.body.classList.remove('con-tarjeta');
     this.actualizarCorrimiento();
     this.marcarActiva();
   }
@@ -183,6 +192,12 @@ export class UI {
     const H = window.innerHeight;
     const entr = $('#entradas').getBoundingClientRect();
     const panelAncho = entr.width > window.innerWidth * 0.6;
+    const movil = window.innerWidth <= 760;
+    // posición de los botones de girar (sobre el panel inferior en celular)
+    const raiz = document.documentElement.style;
+    raiz.setProperty('--alto-entradas', `${Math.round(entr.height)}px`);
+    const hoja = this.abierta && movil ? $('#tarjeta').getBoundingClientRect().height : 0;
+    raiz.setProperty('--alto-inferior', `${Math.round(hoja || H - entr.top)}px`);
     let arriba = 0, abajo = 0;
     if (esc.angosta || panelAncho) {
       arriba = $('#aviso').getBoundingClientRect().bottom + 6;

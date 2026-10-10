@@ -1,6 +1,6 @@
 # ARQUITECTURA · Tienda en Marcha
 
-> Estado: **construido** (sesión 1, 2026-10-09). Este documento describe lo que realmente quedó en el código.
+> Estado: **construido** (sesión 1, 2026-10-09; cámara 360°, botones de girar y muros transparentes en la sesión 2, 2026-10-09). Este documento describe lo que realmente quedó en el código.
 
 ## Stack
 - HTML + CSS + JavaScript con módulos ES nativos. **Sin paso de build**: se sirve tal cual en GitHub Pages.
@@ -104,17 +104,36 @@ La interfaz consulta cada 0,4 s y solo cambia el texto si la nueva clave se mant
 - Clic/toque: cajas invisibles por área (`hitBox`) + raycaster. Se distingue clic de arrastre (≤ 8 px y ≤ 600 ms).
 
 ### Cámara
-- `OrbitControls` con amortiguación y límites: distancia 6,5 a 1,25× la vista general, ángulo vertical 0,28–1,22 rad, giro ±0,85 rad alrededor del azimut base, objetivo acotado a la zona del diorama.
-- Vista general calculada según el aspecto de la pantalla para que todo el diorama quepa.
-- **Pantallas angostas (aspecto < 0,85: celular vertical, tableta vertical)**: la cámara se ubica de costado (azimut base 90°), de modo que el recorrido queda de arriba (entradas) hacia abajo (cofre) y la escena se ve mucho más grande que de frente. La valla gira para mirar a esa cámara.
+- `OrbitControls` con amortiguación. **Giro horizontal libre (360° en ambos sentidos)**: `minAzimuthAngle`/`maxAzimuthAngle` = ±Infinity. Se mantienen los demás límites: distancia 6,5 a 1,25× la vista general, ángulo vertical 0,28–1,22 rad (nunca se mete bajo la isla) y objetivo acotado a la zona del diorama.
+- **Mouse (escritorio)**: lo maneja OrbitControls (`rotateSpeed` 0,6, inercia por su amortiguación). Una vuelta completa ≈ alto de la ventana / 0,6 (≈ 1 200 px en 1280×720).
+- **Táctil, un dedo**: giro propio (`giroTactil` en scene.js); OrbitControls queda con `touches = { ONE: null, TWO: DOLLY_PAN }`, así que dos dedos siguen acercando y desplazando.
+  - Horizontal: una vuelta completa = arrastrar el **85 % del ancho de la pantalla** (306 px en un celular de 360 px).
+  - Vertical: 1,8 rad por alto de pantalla, limitado al mismo rango vertical.
+  - Inercia al soltar con el dedo en movimiento: velocidad suavizada, tope 4 rad/s y frenado exponencial (×e^-4,5 por segundo), lo que suma como máximo ~50° de giro. Sin inercia con `prefers-reduced-motion`.
+  - Tocar la escena durante un vuelo de cámara lo interrumpe y deja el control al dedo.
+- **Botones de girar**: `escena.girar(±1)` gira 45° alrededor del objetivo actual con una animación de 0,55 s (easing cúbico). Si se tocan varias veces seguidas, los pasos se suman (el vuelo lleva un azimut "desenrollado" para no tomar el camino corto equivocado). Con `prefers-reduced-motion` el giro es un salto directo.
+- Vista general calculada según el aspecto de la pantalla para que todo el diorama quepa. "Vista general" vuelve siempre a esa posición inicial (mismo objetivo, ángulo, distancia y azimut base).
+- Al enfocar un área (o volver a la vista general) la cámara toma **el camino más corto** desde donde esté: la diferencia de azimut se normaliza a ±180°.
+- **Pantallas angostas (aspecto < 0,85: celular vertical, tableta vertical)**: la cámara inicial se ubica de costado (azimut base 90°), de modo que el recorrido queda de arriba (entradas) hacia abajo (cofre) y la escena se ve mucho más grande que de frente. La valla gira para mirar a esa cámara.
 - Vuelos suaves (1,15 s, easing cúbico) al enfocar un área; instantáneos con `prefers-reduced-motion`.
 - `camera.setViewOffset` corre la vista para que el área enfocada no quede tapada: a la izquierda de la tarjeta en escritorio, arriba del panel inferior en celular. En pantallas angostas, la vista general también se centra en la franja libre entre cabecera y panel de entradas.
+
+### Muros semitransparentes
+- Los muros que pueden tapar el interior se registran con `registrarMuro(mallas, nx, nz, doble)`: muro del fondo (con su remate), muro izquierdo (con su remate), muro derecho de la bodega y tabique entre tienda y bodega (`doble`: tapa desde ambos lados). Cada uno recibe su propio material (clonado) para poder desvanecerse por separado.
+- Cada cuadro se calcula, en el plano horizontal, el vector del centro del muro a la cámara y su producto con la normal exterior del muro (`s`). Si `s` pasa de 0,12, la opacidad baja con una curva suave hasta 0,22 cuando `s` ≥ 0,45 (cámara claramente del lado de afuera). La opacidad se amortigua (~0,3 s) para que la transición sea suave; con `prefers-reduced-motion` cambia de inmediato.
+- Mientras un muro está semitransparente su material pasa a `transparent` sin escribir profundidad; al volver a opacidad total vuelve a ser opaco (evita artefactos de orden de dibujo).
+- Los frentes bajos, la vitrina, los marcos de puerta, los estantes y la caja fuerte no se desvanecen: son bajos, delgados o forman parte de lo que hay que ver.
+- Las etiquetas son HTML encima del lienzo y el clic en la escena usa cajas invisibles por área, así que los muros nunca bloquean el toque.
 
 ## Interfaz (`js/ui.js`)
 - Etiquetas HTML proyectadas desde anclas 3D cada cuadro (se achican con la distancia y se ocultan fuera de cuadro). Punto rojo con latido = problema; verde = optimizada. El cofre pasa a verde con 4/4.
 - Tarjeta: escritorio = panel derecho; celular = panel inferior (máx. 58 % del alto). Áreas: "Problema detectado", "Lo que hace Actio", efecto visible y botón Aplicar/Deshacer. Cofre: cómo funciona, cuántas áreas faltan, lista de estado y botón "Ir al siguiente cuello de botella".
 - Panel de entradas: interruptor + selector Bajo/Medio/Alto por entrada (elegir un nivel también enciende la entrada). Las etiquetas de la escena de una entrada apagada se tachan.
 - Ayuda inicial modal; se recuerda en `localStorage` que ya se vio (con try/catch; si no hay almacenamiento, vuelve a aparecer). Botón "?" la reabre. Esc cierra ayuda o tarjeta.
+- **Botones de girar** (`#giro`, dos botones redondos de 48 px con `aria-label` y `title` desde `TEXTOS.botones.girarIzq` / `girarDer`; el grupo usa `TEXTOS.botones.girar`). Posición:
+  - Escritorio: esquina inferior derecha (zona de la calle, sin etiquetas). Con la tarjeta abierta se corren a la izquierda de la tarjeta.
+  - Tableta (761–1000 px): esquina inferior derecha; con la tarjeta abierta, encima del panel de entradas (no hay hueco entre ambos paneles).
+  - Celular (≤ 760 px): a la derecha, justo encima del panel de entradas; con la tarjeta inferior abierta, justo encima de la tarjeta. La interfaz publica `--alto-entradas` y `--alto-inferior` como variables CSS para ubicarlos.
 - `?captura` en la URL omite la ayuda (se usó para generar la imagen de compartir).
 
 ## Rendimiento y celular
@@ -122,12 +141,13 @@ La interfaz consulta cada 0,4 s y solo cambia el texto si la nueva clave se mant
 - Pixel ratio máx. 1,75 escritorio / 1,5 celular. Sombras (mapa 2048, PCF suave) solo en escritorio; en celular sin sombras dinámicas y sin antialias (las personas siempre llevan una sombra simple en el piso).
 - El bucle se detiene con la pestaña oculta (`visibilitychange`) y `dt` se limita a 0,1 s.
 - `prefers-reduced-motion`: sin bamboleo, letrero sin chispazos, sin chispas del cofre, transiciones y cámara instantáneas, CSS sin animaciones.
-- Celular: `touch-action: none` en el lienzo (OrbitControls táctil: un dedo gira, dos dedos acercan/desplazan), botones ≥ 44 px, `overflow: hidden` en html/body (sin scroll horizontal), `viewport-fit=cover` y márgenes seguros.
+- Celular: `touch-action: none` en el lienzo (un dedo gira con el giro propio, dos dedos acercan/desplazan con OrbitControls), botones ≥ 44 px, `overflow: hidden` en html/body (sin scroll horizontal), `viewport-fit=cover` y márgenes seguros.
 - Detección de celular: `(max-width: 760px), (pointer: coarse)`.
 - Sin WebGL se muestra un aviso con el logo.
 
 ## Pruebas
-- `window.__tienda` expone la app para pruebas desde la consola (`enfocar`, `toggleArea`, `setFuente`, `reiniciar`, `sim`, `escena`). No afecta al usuario.
+- `window.__tienda` expone la app para pruebas desde la consola (`enfocar`, `toggleArea`, `setFuente`, `reiniciar`, `sim`, `escena`; p. ej. `escena.girar(1)`). No afecta al usuario.
+- El giro táctil se probó despachando `PointerEvent` sintéticos con `pointerType: 'touch'` sobre el lienzo. Esos eventos sintéticos hacen que OrbitControls registre un error de `releasePointerCapture` (no existe un puntero real); con dedos reales no ocurre.
 - La calibración de la simulación se hizo ejecutando `sim.js` en Node sin pantalla (no se versionó el script).
 
 ## Publicación

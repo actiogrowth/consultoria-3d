@@ -39,3 +39,26 @@
 - Instalada la CLI de GitHub (`gh` 2.102.0, winget) y sesión iniciada por Daniel con la cuenta `actiogrowth` (las credenciales guardadas en el equipo eran de otras cuentas).
 - Creado el repo público `actiogrowth/consultoria-3d`, subida la rama `main` y activado GitHub Pages desde la raíz de `main`.
 - Verificado https://actiogrowth.github.io/consultoria-3d/ en escritorio (1280×720) y celular (375×812): carga Three.js 0.160.0 desde jsDelivr, la escena y la interfaz funcionan (enfocar, aplicar, deshacer, reiniciar), `og-image.png` responde 200 y la consola queda sin errores ni advertencias.
+
+## 2026-10-09 · Sesión 2 — Giro 360° y decisiones del PO
+
+### Cámara y giro
+- Quitado el límite de giro horizontal: la cámara da 360° alrededor de la tienda en ambos sentidos (mouse, dedo y botones). Se mantienen los límites vertical, de distancia y de desplazamiento.
+- Giro táctil propio con un dedo: una vuelta completa = 85 % del ancho de pantalla (antes hacía falta ~3 anchos en 360 px y ~3,6 en 375 px), con inercia suave al soltar (máx. ~50° extra) y sin inercia con `prefers-reduced-motion`. Dos dedos siguen acercando y desplazando.
+- Botones "Girar a la izquierda" / "Girar a la derecha": pasos de 45° con animación de 0,55 s que se suman al tocar seguido; salto directo con `prefers-reduced-motion`. Textos en `TEXTOS.botones`.
+- Muros del fondo, izquierdo, derecho de la bodega y tabique se vuelven semitransparentes (hasta 22 %) con transición suave cuando quedan entre la cámara y el interior.
+- "Vista general" sigue devolviendo la posición inicial; enfocar un área toma el camino más corto desde cualquier ángulo.
+
+### Pruebas
+- 360 px (celular pequeño), 375×812 (celular), 768×1024 (tableta) y 1280×720 (escritorio): sin scroll horizontal y botones sin chocar con el panel de entradas ni con la tarjeta (medido por posición de cajas).
+- Botones: 8 pasos a la izquierda = +360° y 8 a la derecha = −360° exactos; tres toques rápidos encadenados = 135°.
+- Dedo emulado (eventos táctiles sintéticos) a 360 px: arrastrar el 85 % del ancho = 360° en cada sentido; golpe corto con inercia; límites verticales respetados (0,28 y 1,22 rad); dos dedos no activan el giro propio.
+- Mouse: arrastre horizontal supera el antiguo límite (136° en un solo arrastre).
+- Camino más corto: desde 135° a Finanzas (−122°), desde 148° a Ventas (−148°), desde 135° a la vista general (−135°), terminando exactamente en la posición inicial.
+- Muros: desde atrás el muro del fondo baja a 0,23; desde la izquierda el muro izquierdo a 0,28; en la vista lateral de celular se desvanecen el muro derecho y el tabique.
+- Etiquetas tocadas con clic real desde una vista girada (detrás/lateral): abren su tarjeta y la cámara vuela por el camino corto.
+- `prefers-reduced-motion` forzado en ejecución: el botón gira 45° de golpe, sin vuelo.
+- Consola sin errores propios. El único error registrado vino de los eventos táctiles sintéticos de la prueba (`releasePointerCapture` de OrbitControls sin puntero real).
+
+### Decisiones registradas
+- D2, D4 y D7 movidas a "Decisiones resueltas" (2026-10-09). D8 aplazado hasta el dominio propio. P5 pasa a riesgo conocido de prioridad Media con la recomendación para reuniones.

@@ -21,6 +21,9 @@ export const TEXTOS = {
     aplicar: 'Aplicar consultoría',
     deshacer: 'Deshacer',
     siguiente: 'Ir al siguiente cuello de botella',
+    girar: 'Girar la vista',
+    girarIzq: 'Girar a la izquierda',
+    girarDer: 'Girar a la derecha',
   },
 
   entradas: {

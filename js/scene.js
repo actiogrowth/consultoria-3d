@@ -250,7 +250,15 @@ export class Escena {
       enableDamping: true, dampingFactor: 0.08, rotateSpeed: 0.6, zoomSpeed: 0.9, panSpeed: 0.7,
       screenSpacePanning: false, minDistance: 6.5, maxDistance: 60, minPolarAngle: 0.28, maxPolarAngle: 1.22,
     });
+    // un dedo: giro propio (más sensible, con inercia); dos dedos: acercar y desplazar
+    this.controls.touches = { ONE: null, TWO: THREE.TOUCH.DOLLY_PAN };
     this.controls.addEventListener('change', () => this.limitarObjetivo());
+    this.toques = new Map();
+    this.arrastre = null;
+    this.inercia = 0;
+    this.velGiro = 0;
+    this.muros = [];
+    this.giroTactil(canvas);
 
     this.f = { marketing: 0, ventas: 0, operaciones: 0, finanzas: 0 };
     this.fObj = { marketing: 0, ventas: 0, operaciones: 0, finanzas: 0 };
@@ -437,11 +445,15 @@ export class Escena {
 
     // muros: fondo alto, izquierdo alto, derecho bajo (bodega), frente bajo
     const H = 2.6;
-    box(w + 0.3, H, 0.3, C.muro, (t.x0 + t.x1) / 2, 0.1, t.z0 - 0.15, this.scene);
-    box(w + 0.32, 0.18, 0.34, C.zocalo, (t.x0 + t.x1) / 2, 0.1 + H, t.z0 - 0.15, this.scene);
-    box(0.3, H, d, C.muro, t.x0 - 0.15, 0.1, (t.z0 + t.z1) / 2, this.scene);
-    box(0.34, 0.18, d + 0.02, C.zocalo, t.x0 - 0.15, 0.1 + H, (t.z0 + t.z1) / 2, this.scene);
-    box(0.3, 1.0, d, C.muroOsc, t.x1 + 0.15, 0.1, (t.z0 + t.z1) / 2, this.scene);
+    this.registrarMuro([
+      box(w + 0.3, H, 0.3, C.muro, (t.x0 + t.x1) / 2, 0.1, t.z0 - 0.15, this.scene),
+      box(w + 0.32, 0.18, 0.34, C.zocalo, (t.x0 + t.x1) / 2, 0.1 + H, t.z0 - 0.15, this.scene),
+    ], 0, -1);
+    this.registrarMuro([
+      box(0.3, H, d, C.muro, t.x0 - 0.15, 0.1, (t.z0 + t.z1) / 2, this.scene),
+      box(0.34, 0.18, d + 0.02, C.zocalo, t.x0 - 0.15, 0.1 + H, (t.z0 + t.z1) / 2, this.scene),
+    ], -1, 0);
+    this.registrarMuro([box(0.3, 1.0, d, C.muroOsc, t.x1 + 0.15, 0.1, (t.z0 + t.z1) / 2, this.scene)], 1, 0);
     // frente bajo (entre puerta de entrada y puerta de salida)
     box(L.puertaSalida.x0 - L.puerta.x1, 0.6, 0.26, C.muro, (L.puerta.x1 + L.puertaSalida.x0) / 2, 0.1, t.z1, this.scene);
     box(L.puertaSalida.x0 - L.puerta.x1, 0.08, 0.3, C.zocalo, (L.puerta.x1 + L.puertaSalida.x0) / 2, 0.7, t.z1, this.scene);
@@ -461,8 +473,10 @@ export class Escena {
 
     // tabique entre tienda y bodega con ventana de entrega
     const tb = L.tabique;
-    box(0.24, 1.7, tb.ventana[0] - t.z0, C.muroOsc, tb.x, 0.1, (t.z0 + tb.ventana[0]) / 2, this.scene);
-    box(0.24, 1.7, t.z1 - tb.ventana[1], C.muroOsc, tb.x, 0.1, (tb.ventana[1] + t.z1) / 2, this.scene);
+    this.registrarMuro([
+      box(0.24, 1.7, tb.ventana[0] - t.z0, C.muroOsc, tb.x, 0.1, (t.z0 + tb.ventana[0]) / 2, this.scene),
+      box(0.24, 1.7, t.z1 - tb.ventana[1], C.muroOsc, tb.x, 0.1, (tb.ventana[1] + t.z1) / 2, this.scene),
+    ], 1, 0, true);
     box(0.7, 1.05, tb.ventana[1] - tb.ventana[0], C.madera, tb.x, 0.1, (tb.ventana[0] + tb.ventana[1]) / 2, this.scene);
     box(0.8, 0.06, tb.ventana[1] - tb.ventana[0] + 0.1, C.maderaOsc, tb.x, 1.15, (tb.ventana[0] + tb.ventana[1]) / 2, this.scene);
     // alfombra zona de entrega
@@ -848,9 +862,9 @@ export class Escena {
   }
 
   aplicarLimites() {
-    const az = this.azBase;
-    this.controls.minAzimuthAngle = az - 0.85;
-    this.controls.maxAzimuthAngle = az + 0.85;
+    // giro horizontal libre (360°); se mantienen ángulo vertical y distancia
+    this.controls.minAzimuthAngle = -Infinity;
+    this.controls.maxAzimuthAngle = Infinity;
     this.controls.maxDistance = this.radioGeneral() * 1.25;
   }
 
@@ -883,8 +897,122 @@ export class Escena {
     while (daz > Math.PI) daz -= Math.PI * 2;
     while (daz < -Math.PI) daz += Math.PI * 2;
     dest.az = desde.az + daz;
-    this.vuelo = { desde, dest, t: 0, dur: 1.15 };
+    this.vuelo = { desde, dest, t: 0, dur: 1.15, azActual: desde.az };
     this.controls.enabled = false;
+    this.inercia = 0;
+  }
+
+  // Estado actual de la cámara (durante un vuelo, en el mismo marco de azimut del vuelo)
+  estadoCamara() {
+    const sph = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(this.camera.position, this.controls.target));
+    return { target: this.controls.target.clone(), r: sph.radius, polar: sph.phi, az: this.vuelo ? this.vuelo.azActual : sph.theta };
+  }
+
+  // Botones de girar: pasos de 45° con animación suave (salto directo con reduced-motion)
+  girar(sentido) {
+    const paso = sentido * (Math.PI / 4);
+    this.inercia = 0;
+    const actual = this.estadoCamara();
+    const base = this.vuelo ? this.vuelo.dest : actual;
+    const dest = { target: base.target.clone(), r: base.r, polar: base.polar, az: base.az + paso };
+    if (this.reducido) {
+      this.vuelo = null;
+      this.ponerCamara(dest);
+      this.controls.enabled = true;
+      return;
+    }
+    this.vuelo = { desde: actual, dest, t: 0, dur: 0.55, azActual: actual.az };
+    this.controls.enabled = false;
+  }
+
+  rotarCamara(dAz, dPol) {
+    const t = this.controls.target;
+    const sph = new THREE.Spherical().setFromVector3(new THREE.Vector3().subVectors(this.camera.position, t));
+    sph.theta += dAz;
+    sph.phi = clamp(sph.phi + dPol, this.controls.minPolarAngle, this.controls.maxPolarAngle);
+    this.camera.position.copy(t).add(new THREE.Vector3().setFromSpherical(sph));
+    this.camera.lookAt(t);
+  }
+
+  // Giro con un dedo: una vuelta completa = 85 % del ancho de pantalla, con inercia suave
+  giroTactil(canvas) {
+    const fin = (e) => {
+      if (e.pointerType !== 'touch') return;
+      this.toques.delete(e.pointerId);
+      const a = this.arrastre;
+      if (a && a.id === e.pointerId) {
+        const reciente = performance.now() - a.t < 120;
+        this.inercia = !this.reducido && reciente ? clamp(this.velGiro, -4, 4) : 0;
+        this.arrastre = null;
+      }
+    };
+    canvas.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch') return;
+      this.toques.set(e.pointerId, true);
+      this.inercia = 0;
+      if (this.toques.size === 1) {
+        this.arrastre = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now() };
+        this.velGiro = 0;
+        if (this.vuelo) { this.vuelo = null; this.controls.enabled = true; }
+      } else {
+        this.arrastre = null; // con dos dedos manda OrbitControls (acercar / desplazar)
+      }
+    });
+    canvas.addEventListener('pointermove', (e) => {
+      if (e.pointerType !== 'touch' || !this.toques.has(e.pointerId) || this.toques.size !== 1) return;
+      const ahora = performance.now();
+      const a = this.arrastre;
+      if (!a || a.id !== e.pointerId) {
+        this.arrastre = { id: e.pointerId, x: e.clientX, y: e.clientY, t: ahora };
+        return;
+      }
+      const dx = e.clientX - a.x, dy = e.clientY - a.y;
+      const w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
+      const dAz = (-dx * Math.PI * 2) / (0.85 * w);
+      const dPol = (-dy * 1.8) / h;
+      this.rotarCamara(dAz, dPol);
+      const dt = Math.max(0.008, (ahora - a.t) / 1000);
+      this.velGiro = this.velGiro * 0.6 + (dAz / dt) * 0.4;
+      a.x = e.clientX; a.y = e.clientY; a.t = ahora;
+    });
+    canvas.addEventListener('pointerup', fin);
+    canvas.addEventListener('pointercancel', fin);
+  }
+
+  // Muros que se vuelven semitransparentes cuando quedan entre la cámara y el interior
+  registrarMuro(meshes, nx, nz, doble = false) {
+    const c = new THREE.Vector3();
+    for (const m of meshes) {
+      m.material = m.material.clone();
+      c.add(m.position);
+    }
+    c.divideScalar(meshes.length);
+    this.muros.push({ meshes, nx, nz, doble, c, op: 1 });
+  }
+
+  actualizarMuros(dt) {
+    const cam = this.camera.position;
+    for (const m of this.muros) {
+      let dx = cam.x - m.c.x, dz = cam.z - m.c.z;
+      const len = Math.hypot(dx, dz) || 1;
+      dx /= len; dz /= len;
+      let s = m.nx * dx + m.nz * dz;
+      if (m.doble) s = Math.abs(s);
+      const k = clamp((s - 0.12) / 0.33, 0, 1);
+      const obj = 1 - 0.78 * k * k * (3 - 2 * k);
+      m.op = this.reducido ? obj : damp(m.op, obj, 6, dt);
+      if (Math.abs(m.op - obj) < 0.002) m.op = obj;
+      const transp = m.op < 0.995;
+      for (const mesh of m.meshes) {
+        const mt = mesh.material;
+        if (mt.transparent !== transp) {
+          mt.transparent = transp;
+          mt.depthWrite = !transp;
+          mt.needsUpdate = true;
+        }
+        mt.opacity = m.op;
+      }
+    }
   }
 
   ponerCamara({ target, r, polar, az }) {
@@ -957,12 +1085,18 @@ export class Escena {
         target: v.desde.target.clone().lerp(v.dest.target, k),
         r: lerp(v.desde.r, v.dest.r, k),
         polar: lerp(v.desde.polar, v.dest.polar, k),
-        az: lerp(v.desde.az, v.dest.az, k),
+        az: (v.azActual = lerp(v.desde.az, v.dest.az, k)),
       });
       if (v.t >= v.dur) { this.vuelo = null; this.controls.enabled = true; }
     } else {
+      // inercia del giro con el dedo
+      if (!this.arrastre && Math.abs(this.inercia) > 0.004) {
+        this.rotarCamara(this.inercia * dt, 0);
+        this.inercia *= Math.exp(-4.5 * dt);
+      }
       this.controls.update();
     }
+    this.actualizarMuros(dt);
     // corrimiento suave por la tarjeta
     const o = this.offset;
     if (o.x !== o.tx || o.y !== o.ty) {
